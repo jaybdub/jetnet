@@ -33,6 +33,9 @@
             var overlayLayer = new Konva.Layer();
             stage.add(overlayLayer);
 
+            var fpsLayer = new Konva.Layer();
+            stage.add(fpsLayer);
+
             var imageObj = new Image();
 
             var konvaImage = new Konva.Image({
@@ -64,6 +67,25 @@
                 {% block output %}{% endblock %}
             });
 
+            socket.on("fps", (data) => {
+                data = JSON.parse(data);
+                fpsLayer.find("Text").forEach((x) => {x.destroy();});
+                console.log(data);    
+                var text = new Konva.Text({
+                    x: 0,
+                    y: 0,
+                    text: data.toFixed(1) + " FPS",
+                    fontSize: 18,
+                    fontFamily: 'Calibri',
+                    fill: 'white',
+                    padding: 8,
+                    align: 'right',
+                    width: image_shape.width
+                });
+
+                fpsLayer.add(text);
+                fpsLayer.draw();
+            });
             });
         </script>
     </body>

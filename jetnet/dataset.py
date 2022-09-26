@@ -16,7 +16,7 @@
 from abc import abstractmethod
 
 from typing import TypeVar, Generic
-from pydantic.generics import GenericModel
+from pydantic.generics import GenericModel, BaseModel
 
 T = TypeVar("T")
 
@@ -41,3 +41,24 @@ class Dataset(GenericModel, Generic[T]):
     @abstractmethod
     def __getitem__(self, index: int) -> T:
         raise NotImplementedError
+
+
+class _DatasetFilter:
+    def __init__(self, dataset, expr):
+        self.dataset = dataset
+        self.expr = eval(expr)
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        return self.expr(self.dataset[index])
+
+
+class DatasetFilter(BaseModel):
+
+    dataset: BaseModel
+    expr: str = "lambda x: x"
+
+    def build(self):
+        return _DatasetFilter(self.dataset.build(), self.expr)

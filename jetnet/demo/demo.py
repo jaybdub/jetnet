@@ -23,6 +23,7 @@ import threading
 import PIL.Image
 import json
 import socketio
+import time
 from typing import Union
 
 from pydantic import BaseModel, PrivateAttr
@@ -54,6 +55,7 @@ class Demo(BaseModel):
     port: int = 8000
     camera_device: int = 0
     exclude_image: bool = False
+    fps_avg_window: int = 10
 
     _running = PrivateAttr(default=False)
     _thread = PrivateAttr(default=None)
@@ -62,8 +64,10 @@ class Demo(BaseModel):
     _sio = PrivateAttr()
     _sio_app = PrivateAttr()
     _app = PrivateAttr()
+    _latencies = PrivateAttr()
 
     def run(self):
+        self._latencies = []
         self.model = self.model.build()
 
         self._camera = cv2.VideoCapture(self.camera_device)
@@ -118,10 +122,18 @@ class Demo(BaseModel):
             )
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = PIL.Image.fromarray(image)
+            t0 = time.monotonic()
             output = self.model(image)
+            t1 = time.monotonic()
+            self._latencies.append(t1 - t0)
+            if len(self._latencies) > self.fps_avg_window:
+                self._latencies = self._latencies[1:]
+            fps = len(self._latencies) / (1e-9 + sum(self._latencies))
+            
             if not self.exclude_image:
                 loop.run_until_complete(self._sio.emit("image", image_jpeg))
             loop.run_until_complete(self._sio.emit("output", output.json()))
+            loop.run_until_complete(self._sio.emit("fps", f"{fps}"))
 
             re, image = camera.read()
 

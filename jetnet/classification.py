@@ -15,11 +15,12 @@
 
 from abc import abstractmethod
 from pydantic import BaseModel
-from jetnet.image import Image
+from jetnet.image import Image, ImageDataset
 from jetnet.model import Model
+from jetnet.dataset import Dataset
 
 
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Tuple
 
 
 class Classification(BaseModel):
@@ -34,3 +35,9 @@ class ClassificationModel(Model[Image, Classification]):
     def get_labels(self) -> Sequence[str]:
         raise NotImplementedError
 
+
+class ClassificationDataset(Dataset[Tuple[Image, Classification]]):
+
+    @abstractmethod
+    def get_labels(self) -> Sequence[str]:
+        raise NotImplementedError
